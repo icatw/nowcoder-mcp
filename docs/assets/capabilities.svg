@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">nowcoder-mcp capabilities preview</title>
+  <desc id="desc">A capability overview for the nowcoder-mcp README, showing search, detail reading, asset extraction, interview signal analysis and report generation.</desc>
+  <defs>
+    <linearGradient id="header" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+    <style>
+      .bg { fill: #f8fafc; }
+      .panel { fill: #ffffff; stroke: #dbe3ee; stroke-width: 1.2; filter: url(#shadow); }
+      .headerText { font-family: Inter, Arial, sans-serif; fill: #ffffff; font-weight: 700; }
+      .subText { font-family: Inter, Arial, sans-serif; fill: #dbeafe; font-weight: 500; }
+      .title { font-family: Inter, Arial, sans-serif; fill: #0f172a; font-weight: 700; font-size: 24px; }
+      .body { font-family: Inter, Arial, sans-serif; fill: #334155; font-size: 18px; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fill: #0f172a; font-size: 17px; }
+      .muted { fill: #64748b; }
+      .chip { fill: #e0f2fe; stroke: #bae6fd; }
+      .chipText { font-family: Inter, Arial, sans-serif; fill: #075985; font-size: 16px; font-weight: 700; }
+      .line { stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 5 7; fill: none; }
+      .accentGreen { fill: #14b8a6; }
+      .accentBlue { fill: #2563eb; }
+      .accentAmber { fill: #f59e0b; }
+      .accentRose { fill: #e11d48; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="640" rx="28"/>
+  <rect x="40" y="36" width="1120" height="110" rx="18" fill="url(#header)"/>
+  <text x="78" y="84" class="headerText" font-size="34">nowcoder-mcp</text>
+  <text x="78" y="122" class="subText" font-size="20">Read-only Nowcoder MCP server for interview research and job preparation</text>
+  <g transform="translate(930 70)">
+    <rect width="164" height="44" rx="22" fill="#dcfce7" opacity="0.96"/>
+    <circle cx="28" cy="22" r="8" fill="#16a34a"/>
+    <text x="48" y="28" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700" fill="#166534">read-only</text>
+  </g>
+
+  <g transform="translate(60 190)">
+    <rect class="panel" width="320" height="158" rx="14"/>
+    <circle cx="38" cy="42" r="14" class="accentBlue"/>
+    <text x="66" y="49" class="title">Search</text>
+    <text x="32" y="88" class="body">company / role / tech stack</text>
+    <rect x="32" y="112" width="120" height="28" rx="14" class="chip"/>
+    <text x="48" y="132" class="chipText">interview</text>
+    <rect x="166" y="112" width="96" height="28" rx="14" class="chip"/>
+    <text x="184" y="132" class="chipText">referral</text>
+  </g>
+
+  <g transform="translate(440 190)">
+    <rect class="panel" width="320" height="158" rx="14"/>
+    <circle cx="38" cy="42" r="14" class="accentGreen"/>
+    <text x="66" y="49" class="title">Read Posts</text>
+    <text x="32" y="88" class="body">discuss content_id</text>
+    <text x="32" y="119" class="body">feed uuid + comments</text>
+    <text x="32" y="145" class="mono muted">get_nowcoder_*_detail</text>
+  </g>
+
+  <g transform="translate(820 190)">
+    <rect class="panel" width="320" height="158" rx="14"/>
+    <circle cx="38" cy="42" r="14" class="accentAmber"/>
+    <text x="66" y="49" class="title">Extract Assets</text>
+    <text x="32" y="88" class="body">resume screenshots</text>
+    <text x="32" y="119" class="body">HTML + SSR image URLs</text>
+    <text x="32" y="145" class="mono muted">no OCR</text>
+  </g>
+
+  <path class="line" d="M380 269 H440"/>
+  <path class="line" d="M760 269 H820"/>
+
+  <g transform="translate(160 410)">
+    <rect class="panel" width="390" height="154" rx="14"/>
+    <circle cx="38" cy="42" r="14" class="accentRose"/>
+    <text x="66" y="49" class="title">Interview Signals</text>
+    <text x="32" y="88" class="body">rounds, roles, tech stack</text>
+    <text x="32" y="119" class="body">algorithms, system design, projects</text>
+    <text x="32" y="145" class="mono muted">extract_nowcoder_post_signals</text>
+  </g>
+
+  <g transform="translate(650 410)">
+    <rect class="panel" width="390" height="154" rx="14"/>
+    <circle cx="38" cy="42" r="14" class="accentBlue"/>
+    <text x="66" y="49" class="title">Feishu-friendly Report</text>
+    <text x="32" y="88" class="body">high-frequency topics</text>
+    <text x="32" y="119" class="body">source links + evidence</text>
+    <text x="32" y="145" class="mono muted">build_nowcoder_interview_report</text>
+  </g>
+
+  <path class="line" d="M600 346 C600 380 355 380 355 410"/>
+  <path class="line" d="M600 346 C600 380 845 380 845 410"/>
+</svg>
