@@ -132,6 +132,36 @@ class CommentResult(BaseModel):
     comments: list[CommentRecord] = Field(default_factory=list)
 
 
+class SourceReference(BaseModel):
+    source_type: str
+    source_id: str
+    title: str = ""
+    url: str
+
+
+class ExtractedSignal(BaseModel):
+    label: str
+    value: str
+    confidence: float = 0.0
+    evidence: str = ""
+
+
+class PostSignals(BaseModel):
+    source: SourceReference
+    interview_rounds: list[ExtractedSignal] = Field(default_factory=list)
+    roles: list[ExtractedSignal] = Field(default_factory=list)
+    tech_stack: list[ExtractedSignal] = Field(default_factory=list)
+    algorithms: list[ExtractedSignal] = Field(default_factory=list)
+    system_design: list[ExtractedSignal] = Field(default_factory=list)
+    project_deep_dive: list[ExtractedSignal] = Field(default_factory=list)
+    behavioral: list[ExtractedSignal] = Field(default_factory=list)
+    process: list[ExtractedSignal] = Field(default_factory=list)
+    result_status: list[ExtractedSignal] = Field(default_factory=list)
+    preparation_advice: list[ExtractedSignal] = Field(default_factory=list)
+    question_count: int = 0
+    raw_excerpt: str = ""
+
+
 class ErrorResult(BaseModel):
     error: str
     message: str

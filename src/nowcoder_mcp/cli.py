@@ -74,6 +74,21 @@ def smoke_user(user_id: str, use_auth: bool = False) -> None:
         client.close()
 
 
+@app.command("smoke-signals")
+def smoke_signals(
+    content_id: str | None = None,
+    uuid: str | None = None,
+    use_auth: bool = False,
+) -> None:
+    """Extract structured interview signals from one discuss or feed post."""
+    client = NowcoderClient()
+    try:
+        result = client.extract_post_signals(content_id=content_id, uuid=uuid, use_auth=use_auth)
+        typer.echo(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))
+    finally:
+        client.close()
+
+
 @app.command("me")
 def me() -> None:
     """Fetch the current logged-in Nowcoder user. Requires auth mode."""

@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from .analysis import extract_post_signals
 from .auth import NowcoderSessionStore
 from .cache import TTLCache
 from .config import NowcoderConfig
@@ -18,6 +19,7 @@ from .models import (
     CurrentUser,
     DiscussDetail,
     FeedDetail,
+    PostSignals,
     SearchRecord,
     SearchResult,
     Sort,
@@ -274,6 +276,18 @@ class NowcoderClient:
         parts = [part for part in [company, role, *(tech_stack or []), "面经", str(year) if year else None] if part]
         query = " ".join(parts) if parts else "面经"
         return self.search(query=query, tag=Tag.interview, sort=Sort.latest, max_pages=max_pages)
+
+    def extract_post_signals(
+        self,
+        content_id: str | None = None,
+        uuid: str | None = None,
+        use_auth: bool = False,
+    ) -> PostSignals:
+        if bool(content_id) == bool(uuid):
+            raise ValueError("Provide exactly one of content_id or uuid")
+        if content_id:
+            return extract_post_signals(self.get_discuss_detail(content_id=content_id, use_auth=use_auth))
+        return extract_post_signals(self.get_feed_detail(uuid=str(uuid), use_auth=use_auth))
 
     def get_discuss_comments(
         self, content_id: str, page: int = 1, use_auth: bool = False

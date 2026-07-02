@@ -35,7 +35,7 @@ GET https://gw-c.nowcoder.com/api/sparta/detail/content-data/detail/{content_id}
 GET https://www.nowcoder.com/feed/main/detail/{uuid}
 ```
 
-Feed detail may require HTML parsing or embedded JSON extraction.
+Feed detail may require HTML parsing or embedded JSON extraction. Some public feed pages can return an accessible page with empty extracted title/content, so phase-2 analysis workflows should prefer discuss `content_id` sources when available and treat empty feed extraction as a low-confidence/no-content source rather than inventing signals.
 
 ## Risk
 

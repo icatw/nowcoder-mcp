@@ -14,6 +14,7 @@ Read-only MCP server for 牛客/Nowcoder interview and job research.
 - Actively probe whether saved login state is still valid.
 - Generate WeChat QR login links, optionally save QR images locally, and wait for scan completion.
 - Convenience interview search by company, role, tech stack, and year.
+- Extract structured interview signals from a single discuss or feed post.
 - Optional login state via Playwright storage state or a cookie env var; cookies are never exposed to MCP tools or logs.
 
 ## Non-goals
@@ -33,6 +34,8 @@ uv run nowcoder-mcp --help
 uv run nowcoder-mcp smoke-search "字节跳动 Java 面经" --max-pages 1
 uv run nowcoder-mcp smoke-comments 877151327091027968
 uv run nowcoder-mcp smoke-user <user_id>
+uv run nowcoder-mcp smoke-signals --content-id <content_id>
+uv run nowcoder-mcp smoke-signals --uuid <feed_uuid>
 NOWCODER_AUTH_MODE=playwright_state uv run nowcoder-mcp me
 uv run nowcoder-mcp auth status
 NOWCODER_AUTH_MODE=playwright_state uv run nowcoder-mcp auth probe
@@ -61,6 +64,7 @@ Hermes config example is in `docs/hermes-mcp-config.md`.
 - `get_nowcoder_feed_detail`
 - `get_nowcoder_user_public_profile`
 - `search_nowcoder_interviews`
+- `extract_nowcoder_post_signals`
 - `nowcoder_me`
 - `nowcoder_auth_probe`
 - `nowcoder_auth_status`

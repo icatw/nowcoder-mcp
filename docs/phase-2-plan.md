@@ -47,7 +47,7 @@ Phase 2 should add analysis-oriented tools on top of existing search/detail APIs
 
 ## Suggested Milestones
 
-1. Add data models and deterministic single-post extraction.
+1. Add data models and deterministic single-post extraction. ✅ started with `extract_nowcoder_post_signals`
 2. Add multi-result analysis and topic aggregation.
 3. Add report builder and CLI smoke commands.
 4. Add MCP tool wrappers and tests.
