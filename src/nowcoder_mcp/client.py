@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from .analysis import extract_post_signals
+from .analysis import aggregate_interview_topics, extract_post_signals
 from .auth import NowcoderSessionStore
 from .cache import TTLCache
 from .config import NowcoderConfig
@@ -19,6 +19,7 @@ from .models import (
     CurrentUser,
     DiscussDetail,
     FeedDetail,
+    InterviewTopicsAnalysis,
     PostSignals,
     SearchRecord,
     SearchResult,
@@ -288,6 +289,41 @@ class NowcoderClient:
         if content_id:
             return extract_post_signals(self.get_discuss_detail(content_id=content_id, use_auth=use_auth))
         return extract_post_signals(self.get_feed_detail(uuid=str(uuid), use_auth=use_auth))
+
+    def analyze_interview_topics(
+        self,
+        query: str,
+        max_pages: int = 1,
+        max_posts: int = 5,
+        use_auth: bool = False,
+    ) -> InterviewTopicsAnalysis:
+        search_result = self.search(
+            query=query,
+            tag=Tag.interview,
+            sort=Sort.latest,
+            max_pages=max_pages,
+            use_auth=use_auth,
+        )
+        posts: list[PostSignals] = []
+        skipped_records = 0
+        seen_content_ids: set[str] = set()
+        for record in search_result.records:
+            if len(posts) >= max(1, min(max_posts, 20)):
+                break
+            if not record.content_id or record.content_id in seen_content_ids:
+                skipped_records += 1
+                continue
+            seen_content_ids.add(record.content_id)
+            try:
+                posts.append(self.extract_post_signals(content_id=record.content_id, use_auth=use_auth))
+            except Exception:
+                skipped_records += 1
+        return aggregate_interview_topics(
+            query=query,
+            posts=posts,
+            total_search_results=search_result.total,
+            skipped_records=skipped_records,
+        )
 
     def get_discuss_comments(
         self, content_id: str, page: int = 1, use_auth: bool = False

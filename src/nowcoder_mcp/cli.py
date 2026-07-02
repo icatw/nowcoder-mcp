@@ -89,6 +89,27 @@ def smoke_signals(
         client.close()
 
 
+@app.command("smoke-topics")
+def smoke_topics(
+    query: str,
+    max_pages: int = typer.Option(1, min=1, max=10),
+    max_posts: int = typer.Option(5, min=1, max=20),
+    use_auth: bool = False,
+) -> None:
+    """Analyze recurring interview topics from Nowcoder discuss posts."""
+    client = NowcoderClient()
+    try:
+        result = client.analyze_interview_topics(
+            query=query,
+            max_pages=max_pages,
+            max_posts=max_posts,
+            use_auth=use_auth,
+        )
+        typer.echo(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))
+    finally:
+        client.close()
+
+
 @app.command("me")
 def me() -> None:
     """Fetch the current logged-in Nowcoder user. Requires auth mode."""

@@ -162,6 +162,30 @@ class PostSignals(BaseModel):
     raw_excerpt: str = ""
 
 
+class TopicSource(BaseModel):
+    title: str = ""
+    url: str
+    evidence: str = ""
+
+
+class TopicAggregate(BaseModel):
+    topic: str
+    count: int = 0
+    sources: list[TopicSource] = Field(default_factory=list)
+
+
+class InterviewTopicsAnalysis(BaseModel):
+    query: str
+    fetched_posts: int = 0
+    skipped_records: int = 0
+    total_search_results: int = 0
+    high_frequency_topics: list[TopicAggregate] = Field(default_factory=list)
+    project_deep_dive: list[TopicAggregate] = Field(default_factory=list)
+    algorithms: list[TopicAggregate] = Field(default_factory=list)
+    system_design: list[TopicAggregate] = Field(default_factory=list)
+    source_posts: list[SourceReference] = Field(default_factory=list)
+
+
 class ErrorResult(BaseModel):
     error: str
     message: str

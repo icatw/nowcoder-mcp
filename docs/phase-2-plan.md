@@ -48,7 +48,7 @@ Phase 2 should add analysis-oriented tools on top of existing search/detail APIs
 ## Suggested Milestones
 
 1. Add data models and deterministic single-post extraction. ✅ started with `extract_nowcoder_post_signals`
-2. Add multi-result analysis and topic aggregation.
+2. Add multi-result analysis and topic aggregation. ✅ started with `analyze_nowcoder_interview_topics`
 3. Add report builder and CLI smoke commands.
 4. Add MCP tool wrappers and tests.
 5. Update README, docs, and `nowcoder-job-research` skill.
