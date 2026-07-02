@@ -1,4 +1,4 @@
-from nowcoder_mcp.analysis import aggregate_interview_topics, extract_post_signals
+from nowcoder_mcp.analysis import aggregate_interview_topics, build_interview_report, extract_post_signals
 from nowcoder_mcp.models import DiscussDetail, FeedDetail
 
 
@@ -78,3 +78,34 @@ def test_aggregate_interview_topics_counts_topics_and_keeps_sources():
     assert result.algorithms[0].topic == "链表"
     assert result.project_deep_dive
     assert result.system_design
+
+
+def test_build_interview_report_outputs_feishu_friendly_markdown():
+    post = extract_post_signals(
+        DiscussDetail(
+            content_id="1",
+            title="Java 后端一面",
+            content="问 Redis 缓存穿透，手撕链表，项目深挖如何保证高并发。",
+            url="https://www.nowcoder.com/discuss/1",
+        )
+    )
+    analysis = aggregate_interview_topics(
+        query="字节 Java 面经",
+        posts=[post],
+        total_search_results=8,
+        skipped_records=2,
+    )
+
+    report = build_interview_report(analysis)
+
+    assert report.query == "字节 Java 面经"
+    assert report.analysis == analysis
+    assert "# 牛客面经准备报告：字节 Java 面经" in report.markdown
+    assert "## 高频技术题" in report.markdown
+    assert "## 项目深挖" in report.markdown
+    assert "## 算法准备" in report.markdown
+    assert "## 系统设计" in report.markdown
+    assert "## 准备清单" in report.markdown
+    assert "## 来源帖子" in report.markdown
+    assert "[Java 后端一面](https://www.nowcoder.com/discuss/1)" in report.markdown
+    assert "|" not in report.markdown

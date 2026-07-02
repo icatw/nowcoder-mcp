@@ -186,6 +186,12 @@ class InterviewTopicsAnalysis(BaseModel):
     source_posts: list[SourceReference] = Field(default_factory=list)
 
 
+class InterviewReport(BaseModel):
+    query: str
+    markdown: str
+    analysis: InterviewTopicsAnalysis
+
+
 class ErrorResult(BaseModel):
     error: str
     message: str

@@ -8,6 +8,7 @@ from .models import (
     ExtractedSignal,
     FeedDetail,
     InterviewTopicsAnalysis,
+    InterviewReport,
     PostSignals,
     SourceReference,
     TopicAggregate,
@@ -287,3 +288,77 @@ def _topic_name(signal: ExtractedSignal) -> str:
     if signal.label in {"tech", "role"}:
         return signal.value
     return signal.label
+
+
+def build_interview_report(analysis: InterviewTopicsAnalysis) -> InterviewReport:
+    lines: list[str] = [
+        f"# 牛客面经准备报告：{analysis.query}",
+        "",
+        "## 概览",
+        f"- 搜索结果总数：{analysis.total_search_results}",
+        f"- 已抓取可分析帖子：{analysis.fetched_posts}",
+        f"- 已跳过记录：{analysis.skipped_records}",
+        "- 说明：以下内容来自牛客公开帖子，属于候选人经验样本，不代表官方招聘要求。",
+        "",
+    ]
+    lines.extend(_topic_section("## 高频技术题", analysis.high_frequency_topics))
+    lines.extend(_topic_section("## 项目深挖", analysis.project_deep_dive))
+    lines.extend(_topic_section("## 算法准备", analysis.algorithms))
+    lines.extend(_topic_section("## 系统设计", analysis.system_design))
+    lines.extend(_action_checklist(analysis))
+    lines.extend(_source_section(analysis))
+    markdown = "\n".join(lines).strip() + "\n"
+    return InterviewReport(query=analysis.query, markdown=markdown, analysis=analysis)
+
+
+def _topic_section(title: str, topics: list[TopicAggregate]) -> list[str]:
+    lines = [title]
+    if not topics:
+        return [*lines, "- 暂无稳定信号。", ""]
+    for topic in topics:
+        lines.append(f"- **{topic.topic}**：出现 {topic.count} 次")
+        for source in topic.sources[:3]:
+            title_text = source.title or source.url
+            evidence = _compact_text(source.evidence, 110)
+            lines.append(f"  - 来源：[{title_text}]({source.url})")
+            if evidence:
+                lines.append(f"  - 证据：{evidence}")
+    lines.append("")
+    return lines
+
+
+def _action_checklist(analysis: InterviewTopicsAnalysis) -> list[str]:
+    topics = [topic.topic for topic in analysis.high_frequency_topics[:6]]
+    algorithms = [topic.topic for topic in analysis.algorithms[:4]]
+    system_design = [topic.topic for topic in analysis.system_design[:4]]
+    project_topics = [topic.topic for topic in analysis.project_deep_dive[:4]]
+    lines = ["## 准备清单"]
+    if topics:
+        lines.append(f"- 先复盘高频基础：{'、'.join(topics)}。")
+    if project_topics:
+        lines.append(f"- 准备项目追问：{'、'.join(project_topics)}，每项都要能讲背景、方案、取舍和结果。")
+    if algorithms:
+        lines.append(f"- 算法练习优先级：{'、'.join(algorithms)}，准备口述复杂度和边界条件。")
+    if system_design:
+        lines.append(f"- 系统设计准备：{'、'.join(system_design)}，重点讲容量、瓶颈、降级和一致性。")
+    if not any([topics, project_topics, algorithms, system_design]):
+        lines.append("- 当前样本不足，建议增加 `max_posts` 或换更具体的公司/岗位关键词。")
+    return [*lines, ""]
+
+
+def _source_section(analysis: InterviewTopicsAnalysis) -> list[str]:
+    lines = ["## 来源帖子"]
+    if not analysis.source_posts:
+        return [*lines, "- 暂无可分析来源。", ""]
+    for source in analysis.source_posts:
+        title = source.title or source.url
+        lines.append(f"- [{title}]({source.url})")
+    lines.append("")
+    return lines
+
+
+def _compact_text(text: str, limit: int) -> str:
+    compact = re.sub(r"\s+", " ", text).strip()
+    if len(compact) <= limit:
+        return compact
+    return compact[: limit - 1].rstrip() + "…"

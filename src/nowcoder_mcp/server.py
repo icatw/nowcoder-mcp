@@ -138,6 +138,29 @@ def analyze_nowcoder_interview_topics(
         client.close()
 
 
+@mcp.tool(description="Build a Feishu-friendly Markdown interview prep report from Nowcoder discuss results. Read-only.")
+def build_nowcoder_interview_report(
+    query: str,
+    max_pages: int = 1,
+    max_posts: int = 5,
+    use_auth: bool = False,
+) -> dict:
+    client = _client()
+    try:
+        return to_jsonable(
+            client.build_interview_report(
+                query=query,
+                max_pages=max_pages,
+                max_posts=max_posts,
+                use_auth=use_auth,
+            )
+        )
+    except Exception as exc:
+        return error_to_jsonable(exc)
+    finally:
+        client.close()
+
+
 @mcp.tool(description="Extract structured interview signals from one Nowcoder discuss or feed post. Read-only.")
 def extract_nowcoder_post_signals(
     content_id: str | None = None,

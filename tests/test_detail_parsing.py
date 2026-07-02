@@ -4,7 +4,11 @@ import respx
 from httpx import Response
 
 from nowcoder_mcp.client import NOWCODER_DISCUSS_DETAIL_URL, NOWCODER_FEED_URL, NowcoderClient
-from nowcoder_mcp.server import analyze_nowcoder_interview_topics, extract_nowcoder_post_signals
+from nowcoder_mcp.server import (
+    analyze_nowcoder_interview_topics,
+    build_nowcoder_interview_report,
+    extract_nowcoder_post_signals,
+)
 
 
 def test_discuss_detail_converts_html_to_text():
@@ -91,3 +95,39 @@ def test_analyze_interview_topics_tool_returns_jsonable_dict():
     assert result["fetched_posts"] == 1
     assert result["skipped_records"] == 1
     assert result["source_posts"][0]["url"].endswith("/discuss/12345")
+
+
+def test_client_build_interview_report_returns_markdown():
+    search_fixture = Path("tests/fixtures/search_response.json").read_text()
+    detail_fixture = Path("tests/fixtures/discuss_detail_response.json").read_text()
+    with respx.mock:
+        respx.post("https://gw-c.nowcoder.com/api/sparta/pc/search").mock(
+            return_value=Response(200, content=search_fixture)
+        )
+        respx.get(f"{NOWCODER_DISCUSS_DETAIL_URL}/12345").mock(
+            return_value=Response(200, content=detail_fixture)
+        )
+        client = NowcoderClient()
+        report = client.build_interview_report("字节 Java 面经", max_posts=3)
+
+    assert report.markdown.startswith("# 牛客面经准备报告：字节 Java 面经")
+    assert report.analysis.fetched_posts == 1
+    assert "https://www.nowcoder.com/discuss/12345" in report.markdown
+
+
+def test_build_interview_report_tool_returns_markdown_and_analysis():
+    search_fixture = Path("tests/fixtures/search_response.json").read_text()
+    detail_fixture = Path("tests/fixtures/discuss_detail_response.json").read_text()
+    with respx.mock:
+        respx.post("https://gw-c.nowcoder.com/api/sparta/pc/search").mock(
+            return_value=Response(200, content=search_fixture)
+        )
+        respx.get(f"{NOWCODER_DISCUSS_DETAIL_URL}/12345").mock(
+            return_value=Response(200, content=detail_fixture)
+        )
+        result = build_nowcoder_interview_report("字节 Java 面经", max_posts=3)
+
+    assert result["query"] == "字节 Java 面经"
+    assert result["analysis"]["fetched_posts"] == 1
+    assert result["markdown"].startswith("# 牛客面经准备报告：字节 Java 面经")
+    assert "|" not in result["markdown"]

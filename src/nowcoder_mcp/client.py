@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from .analysis import aggregate_interview_topics, extract_post_signals
+from .analysis import aggregate_interview_topics, build_interview_report, extract_post_signals
 from .auth import NowcoderSessionStore
 from .cache import TTLCache
 from .config import NowcoderConfig
@@ -20,6 +20,7 @@ from .models import (
     DiscussDetail,
     FeedDetail,
     InterviewTopicsAnalysis,
+    InterviewReport,
     PostSignals,
     SearchRecord,
     SearchResult,
@@ -324,6 +325,21 @@ class NowcoderClient:
             total_search_results=search_result.total,
             skipped_records=skipped_records,
         )
+
+    def build_interview_report(
+        self,
+        query: str,
+        max_pages: int = 1,
+        max_posts: int = 5,
+        use_auth: bool = False,
+    ) -> InterviewReport:
+        analysis = self.analyze_interview_topics(
+            query=query,
+            max_pages=max_pages,
+            max_posts=max_posts,
+            use_auth=use_auth,
+        )
+        return build_interview_report(analysis)
 
     def get_discuss_comments(
         self, content_id: str, page: int = 1, use_auth: bool = False

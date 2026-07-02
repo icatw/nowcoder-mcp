@@ -110,6 +110,31 @@ def smoke_topics(
         client.close()
 
 
+@app.command("smoke-report")
+def smoke_report(
+    query: str,
+    max_pages: int = typer.Option(1, min=1, max=10),
+    max_posts: int = typer.Option(5, min=1, max=20),
+    markdown_only: bool = False,
+    use_auth: bool = False,
+) -> None:
+    """Build a Feishu-friendly Markdown interview prep report."""
+    client = NowcoderClient()
+    try:
+        result = client.build_interview_report(
+            query=query,
+            max_pages=max_pages,
+            max_posts=max_posts,
+            use_auth=use_auth,
+        )
+        if markdown_only:
+            typer.echo(result.markdown)
+        else:
+            typer.echo(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))
+    finally:
+        client.close()
+
+
 @app.command("me")
 def me() -> None:
     """Fetch the current logged-in Nowcoder user. Requires auth mode."""
