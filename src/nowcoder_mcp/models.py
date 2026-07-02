@@ -66,6 +66,20 @@ class FeedDetail(BaseModel):
     url: str
 
 
+class ImageAsset(BaseModel):
+    url: str
+    alt: str = ""
+    source: str = "html"
+
+
+class PostAssets(BaseModel):
+    source_type: str
+    source_id: str
+    title: str = ""
+    url: str
+    images: list[ImageAsset] = Field(default_factory=list)
+
+
 class AuthStatus(BaseModel):
     mode: str
     state_file_exists: bool = False

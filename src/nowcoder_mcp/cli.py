@@ -89,6 +89,21 @@ def smoke_signals(
         client.close()
 
 
+@app.command("smoke-assets")
+def smoke_assets(
+    content_id: str | None = None,
+    uuid: str | None = None,
+    use_auth: bool = False,
+) -> None:
+    """Extract image assets from one discuss or feed post without OCR."""
+    client = NowcoderClient()
+    try:
+        result = client.get_post_assets(content_id=content_id, uuid=uuid, use_auth=use_auth)
+        typer.echo(json.dumps(to_jsonable(result), ensure_ascii=False, indent=2))
+    finally:
+        client.close()
+
+
 @app.command("smoke-topics")
 def smoke_topics(
     query: str,

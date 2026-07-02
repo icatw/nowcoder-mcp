@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 from typing import Any
+from urllib.parse import urljoin
 
 import httpx
 
@@ -19,8 +20,10 @@ from .models import (
     CurrentUser,
     DiscussDetail,
     FeedDetail,
+    ImageAsset,
     InterviewTopicsAnalysis,
     InterviewReport,
+    PostAssets,
     PostSignals,
     SearchRecord,
     SearchResult,
@@ -267,6 +270,70 @@ class NowcoderClient:
         self.cache.set(cache_key, detail)
         return detail
 
+    def get_discuss_assets(self, content_id: str, use_auth: bool = False) -> PostAssets:
+        cache_key = self._cache_key("discuss-assets", content_id, use_auth)
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
+        response = self._request(
+            "GET", f"{NOWCODER_DISCUSS_DETAIL_URL}/{content_id}", use_auth=use_auth
+        )
+        data = response.json()
+        if not data.get("success"):
+            raise NotFoundError(f"Nowcoder discuss content not found: {content_id}")
+        content_data = data.get("data") or {}
+        url = f"{NOWCODER_DISCUSS_URL}/{content_id}"
+        html = content_data.get("richText") or content_data.get("content") or ""
+        result = PostAssets(
+            source_type="discuss",
+            source_id=content_id,
+            title=content_data.get("title") or "",
+            url=url,
+            images=self._extract_images_from_html(html, base_url=url),
+        )
+        self.cache.set(cache_key, result)
+        return result
+
+    def get_feed_assets(self, uuid: str, use_auth: bool = False) -> PostAssets:
+        cache_key = self._cache_key("feed-assets", uuid, use_auth)
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
+        url = f"{NOWCODER_FEED_URL}/{uuid}"
+        response = self._request("GET", url, use_auth=use_auth)
+        page = response.text
+        if "内容不存在" in page:
+            raise NotFoundError(f"Nowcoder feed content not found: {uuid}")
+        title, _ = extract_feed_content(page)
+        content_data = self._extract_feed_content_data(page, uuid)
+        if content_data:
+            title = str(content_data.get("title") or content_data.get("newTitle") or title)
+            images = self._extract_images_from_feed_content_data(content_data, base_url=url)
+        else:
+            title, _ = extract_feed_content(page)
+            images = self._extract_images_from_html(page, base_url=url)
+        result = PostAssets(
+            source_type="feed",
+            source_id=uuid,
+            title=title,
+            url=url,
+            images=images,
+        )
+        self.cache.set(cache_key, result)
+        return result
+
+    def get_post_assets(
+        self,
+        content_id: str | None = None,
+        uuid: str | None = None,
+        use_auth: bool = False,
+    ) -> PostAssets:
+        if bool(content_id) == bool(uuid):
+            raise ValueError("Provide exactly one of content_id or uuid")
+        if content_id:
+            return self.get_discuss_assets(content_id=content_id, use_auth=use_auth)
+        return self.get_feed_assets(uuid=str(uuid), use_auth=use_auth)
+
     def search_interviews(
         self,
         company: str | None = None,
@@ -443,6 +510,110 @@ class NowcoderClient:
             if content:
                 comments.append(CommentRecord(comment_id=match.group("id"), content=html_to_text(content)))
         return comments
+
+    @staticmethod
+    def _extract_feed_content_data(page: str, uuid: str) -> dict[str, Any] | None:
+        marker = "window.__INITIAL_STATE__="
+        start = page.find(marker)
+        if start < 0:
+            return None
+        json_start = start + len(marker)
+        try:
+            state, _ = json.JSONDecoder().raw_decode(page[json_start:])
+        except json.JSONDecodeError:
+            return None
+        prefetch_data = (state.get("prefetchData") or {}) if isinstance(state, dict) else {}
+        for item in prefetch_data.values():
+            if not isinstance(item, dict):
+                continue
+            common_data = item.get("ssrCommonData") or {}
+            content_data = common_data.get("contentData") or item.get("contentData") or {}
+            if isinstance(content_data, dict) and content_data.get("uuid") == uuid:
+                return content_data
+        return None
+
+    @staticmethod
+    def _extract_images_from_feed_content_data(
+        content_data: dict[str, Any],
+        base_url: str,
+    ) -> list[ImageAsset]:
+        images: list[ImageAsset] = []
+        seen: set[str] = set()
+        for field in ["imgMoment", "contentImageUrls", "imageUrls", "images"]:
+            values = content_data.get(field) or []
+            if not isinstance(values, list):
+                continue
+            for item in values:
+                if isinstance(item, str):
+                    raw_url = item
+                    alt = ""
+                elif isinstance(item, dict):
+                    raw_url = str(item.get("src") or item.get("url") or item.get("imageUrl") or "")
+                    alt = str(item.get("alt") or item.get("title") or "")
+                else:
+                    continue
+                image_url = NowcoderClient._normalize_asset_url(raw_url, base_url)
+                if not image_url or image_url in seen:
+                    continue
+                seen.add(image_url)
+                images.append(ImageAsset(url=image_url, alt=alt, source=field))
+        return images
+
+    @staticmethod
+    def _extract_images_from_html(html: str, base_url: str) -> list[ImageAsset]:
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html, "html.parser")
+        images: list[ImageAsset] = []
+        seen: set[str] = set()
+        for node in soup.find_all("img"):
+            raw_url = ""
+            for attr in ["src", "data-src", "data-original", "data-url", "data-preview-src"]:
+                value = node.get(attr)
+                if value:
+                    raw_url = str(value)
+                    break
+            if not raw_url:
+                continue
+            image_url = NowcoderClient._normalize_asset_url(raw_url, base_url)
+            if not image_url or image_url in seen:
+                continue
+            seen.add(image_url)
+            images.append(
+                ImageAsset(
+                    url=image_url,
+                    alt=str(node.get("alt") or node.get("title") or ""),
+                    source="img",
+                )
+            )
+        for match in re.finditer(
+            r'"(?:imageUrl|image_url|imgUrl|img_url|picUrl|pic_url|url|src)"\s*:\s*"((?:\\.|[^"\\])*)"',
+            html,
+        ):
+            raw_url = NowcoderClient._decode_json_string(match.group(1))
+            if not NowcoderClient._looks_like_image_url(raw_url):
+                continue
+            image_url = NowcoderClient._normalize_asset_url(raw_url, base_url)
+            if not image_url or image_url in seen:
+                continue
+            seen.add(image_url)
+            images.append(ImageAsset(url=image_url, source="embedded_json"))
+        return images
+
+    @staticmethod
+    def _normalize_asset_url(raw_url: str, base_url: str) -> str:
+        raw_url = raw_url.strip()
+        if not raw_url or raw_url.startswith("data:"):
+            return ""
+        if raw_url.startswith("//"):
+            return f"https:{raw_url}"
+        return urljoin(base_url, raw_url)
+
+    @staticmethod
+    def _looks_like_image_url(url: str) -> bool:
+        if re.search(r"\.(?:png|jpe?g|gif|webp|bmp|svg)(?:[?#]|$)", url, re.IGNORECASE):
+            return True
+        return bool(re.search(r"https?:\\?/\\?/uploadfiles\.nowcoder\.com/(?:images|files)/", url, re.IGNORECASE))
 
     @staticmethod
     def _parse_user_public_profile(user_id: str, url: str, html: str) -> UserPublicProfile:

@@ -8,6 +8,7 @@ from nowcoder_mcp.server import (
     analyze_nowcoder_interview_topics,
     build_nowcoder_interview_report,
     extract_nowcoder_post_signals,
+    get_nowcoder_post_assets,
 )
 
 
@@ -35,6 +36,94 @@ def test_feed_detail_extracts_visible_content():
     assert detail.title == "Feed标题"
     assert "Feed 第一行" in detail.content
     assert "Feed 第二行" in detail.content
+
+
+def test_discuss_assets_extracts_images_from_rich_text():
+    fixture = (
+        '{"success":true,"data":{"title":"带图帖子","richText":"'
+        '<p>简历</p><img src=\\"//uploadfiles.nowcoder.com/resume.png\\" alt=\\"简历图\\">'
+        '<img data-src=\\"https://static.nowcoder.com/dup.jpg\\">'
+        '<img src=\\"https://static.nowcoder.com/dup.jpg\\">'
+        '"}}'
+    )
+    with respx.mock:
+        respx.get(f"{NOWCODER_DISCUSS_DETAIL_URL}/with-images").mock(
+            return_value=Response(200, content=fixture)
+        )
+        client = NowcoderClient()
+        assets = client.get_discuss_assets("with-images")
+
+    assert assets.source_type == "discuss"
+    assert assets.title == "带图帖子"
+    assert [image.url for image in assets.images] == [
+        "https://uploadfiles.nowcoder.com/resume.png",
+        "https://static.nowcoder.com/dup.jpg",
+    ]
+    assert assets.images[0].alt == "简历图"
+
+
+def test_feed_assets_extracts_img_and_embedded_json_images():
+    html = """
+    <html><head><script>window.__DATA__={"title":"Feed标题","imageUrl":"https://img.nowcoder.com/a.webp","imgMoment":[{"src":"https:\\/\\/uploadfiles.nowcoder.com\\/images\\/20260627\\/1_2\\/ABCDEF"}]}</script></head>
+    <body><div class="feed-content-text"><p>正文</p><img data-original="/relative.jpg" alt="相对图"></div></body></html>
+    """
+    with respx.mock:
+        respx.get(f"{NOWCODER_FEED_URL}/image-feed").mock(return_value=Response(200, text=html))
+        client = NowcoderClient()
+        assets = client.get_feed_assets("image-feed")
+
+    assert assets.source_type == "feed"
+    assert assets.title == "Feed标题"
+    assert [image.url for image in assets.images] == [
+        "https://www.nowcoder.com/relative.jpg",
+        "https://img.nowcoder.com/a.webp",
+        "https://uploadfiles.nowcoder.com/images/20260627/1_2/ABCDEF",
+    ]
+
+
+def test_feed_assets_prefers_current_post_initial_state_images():
+    html = """
+    <html><body>
+      <img src="https://static.nowcoder.com/logo.png">
+      <script>window.__INITIAL_STATE__={"prefetchData":{"2":{"ssrCommonData":{"contentData":{"uuid":"target-feed","title":"目标帖","imgMoment":[{"src":"https:\\/\\/uploadfiles.nowcoder.com\\/images\\/20260627\\/1_2\\/RESUME","alt":"简历"}]}}}}};</script>
+    </body></html>
+    """
+    with respx.mock:
+        respx.get(f"{NOWCODER_FEED_URL}/target-feed").mock(return_value=Response(200, text=html))
+        client = NowcoderClient()
+        assets = client.get_feed_assets("target-feed")
+
+    assert assets.title == "目标帖"
+    assert [image.url for image in assets.images] == [
+        "https://uploadfiles.nowcoder.com/images/20260627/1_2/RESUME"
+    ]
+    assert assets.images[0].source == "imgMoment"
+
+
+def test_get_post_assets_requires_exactly_one_identifier():
+    client = NowcoderClient()
+    try:
+        client.get_post_assets()
+    except ValueError as exc:
+        assert "exactly one" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
+
+
+def test_get_post_assets_tool_returns_jsonable_dict():
+    fixture = (
+        '{"success":true,"data":{"title":"带图帖子","richText":"'
+        '<img src=\\"https://static.nowcoder.com/resume.jpg\\">'
+        '"}}'
+    )
+    with respx.mock:
+        respx.get(f"{NOWCODER_DISCUSS_DETAIL_URL}/with-images").mock(
+            return_value=Response(200, content=fixture)
+        )
+        result = get_nowcoder_post_assets(content_id="with-images")
+
+    assert result["source_type"] == "discuss"
+    assert result["images"][0]["url"] == "https://static.nowcoder.com/resume.jpg"
 
 
 def test_client_extract_post_signals_reuses_discuss_detail():

@@ -178,6 +178,21 @@ def extract_nowcoder_post_signals(
         client.close()
 
 
+@mcp.tool(description="Extract image assets from one Nowcoder discuss or feed post. Read-only; no OCR.")
+def get_nowcoder_post_assets(
+    content_id: str | None = None,
+    uuid: str | None = None,
+    use_auth: bool = False,
+) -> dict:
+    client = _client()
+    try:
+        return to_jsonable(client.get_post_assets(content_id=content_id, uuid=uuid, use_auth=use_auth))
+    except Exception as exc:
+        return error_to_jsonable(exc)
+    finally:
+        client.close()
+
+
 @mcp.tool(description="Fetch visible comments for a Nowcoder discuss post. Read-only.")
 def get_nowcoder_discuss_comments(content_id: str, page: int = 1, use_auth: bool = False) -> dict:
     client = _client()
